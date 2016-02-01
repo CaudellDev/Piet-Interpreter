@@ -189,21 +189,21 @@ public class MainFrame extends javax.swing.JFrame {
                 if (image != null) {
                     program = new PietProgram(image);
                     
-                    program.setCallback(new PietProgram.InIntCallback() {
+                    program.setInIntCallback(new PietProgram.InIntCallback() {
                         @Override
                         public int onInInt() {
                             return 0;
                         }
                     });
                     
-                    program.setCallback(new PietProgram.InStrCallback() {
+                    program.setInStrCallback(new PietProgram.InStrCallback() {
                         @Override
                         public String onInStr() {
                             return "";
                         }
                     });
                     
-                    program.setCallback(new PietProgram.OutIntCallback() {
+                    program.setOutIntCallback(new PietProgram.OutIntCallback() {
                         @Override
                         public void onOutInt(int value) {
                             

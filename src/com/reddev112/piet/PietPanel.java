@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.reddev112.piet;
 
 import java.awt.BasicStroke;
@@ -12,10 +7,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import javax.swing.JPanel;
 
-/**
- *
- * @author Tyler
- */
 public class PietPanel extends JPanel {
     public static final int DEFAULT_CODEL_WIDTH = 50;
     private PietProgram program;
@@ -62,7 +53,16 @@ public class PietPanel extends JPanel {
     }
 
     @Override
+    public void repaint() {
+        setSize(500, 500);
+        super.repaint(); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    
+
+    @Override
     protected void paintComponent(Graphics g) {
+        
         super.paintComponent(g);
         if (program == null) return;
         

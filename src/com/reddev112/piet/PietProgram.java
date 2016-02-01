@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.reddev112.piet;
 
 import java.awt.Color;
@@ -13,16 +8,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author Tyler
- */
 public class PietProgram {
     
     // code is an array of columns. code.get() == col
@@ -46,6 +38,10 @@ public class PietProgram {
     private InStrCallback inStrCallback;
     private OutIntCallback outIntCallback;
     private OutStrCallback outStrCallback;
+    
+    
+    static public final String[] DP = { "R", "D", "L", "U" };
+    static public final String[] CC = { "l", "r" };
     
     public PietProgram() {
         init();
@@ -110,6 +106,7 @@ public class PietProgram {
     }
     
     public void run() {
+        System.out.println("Running Piet Program...");
         while (!complete) {
             step();
         }
@@ -313,7 +310,7 @@ public class PietProgram {
         return result;
     }
     
-    private ArrayList<PietCodel> blockCountHelper(PietCodel codel) {
+    private ArrayList<PietCodel> blockCountHelper3(PietCodel codel) {
         ArrayList<PietCodel> result = new ArrayList<>();
         codel.setValue(PietCodel.CHECKED);
         int col = codel.getCol();
@@ -323,7 +320,7 @@ public class PietProgram {
         PietCodel ajac = get(col + 1, row);
         if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() == PietCodel.DEFAULT) {
 //            System.out.println("blockCountHelper going right...");
-            ArrayList<PietCodel> nextCodels = blockCountHelper(ajac);
+            ArrayList<PietCodel> nextCodels = blockCountHelper3(ajac);
             result.add(ajac);
             result.addAll(nextCodels);
         }
@@ -332,7 +329,7 @@ public class PietProgram {
         ajac = get(col, row + 1);
         if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() == PietCodel.DEFAULT) {
 //            System.out.println("blockCountHelper going down...");
-            ArrayList<PietCodel> nextCodels = blockCountHelper(ajac);
+            ArrayList<PietCodel> nextCodels = blockCountHelper3(ajac);
             result.add(ajac);
             result.addAll(nextCodels);
         }
@@ -341,7 +338,7 @@ public class PietProgram {
         ajac = get(col - 1, row);
         if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() == PietCodel.DEFAULT) {
 //            System.out.println("blockCountHelper going left...");
-            ArrayList<PietCodel> nextCodels = blockCountHelper(ajac);
+            ArrayList<PietCodel> nextCodels = blockCountHelper3(ajac);
             result.add(ajac);
             result.addAll(nextCodels);
         }
@@ -350,7 +347,7 @@ public class PietProgram {
         ajac = get(col, row - 1);
         if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() == PietCodel.DEFAULT) {
 //            System.out.println("blockCountHelper going up...");
-            ArrayList<PietCodel> nextCodels = blockCountHelper(ajac);
+            ArrayList<PietCodel> nextCodels = blockCountHelper3(ajac);
             result.add(ajac);
             result.addAll(nextCodels);
         }
@@ -358,6 +355,37 @@ public class PietProgram {
 //        System.out.println("blockCountHelper finished...");
         return result;
     }
+    
+    private ArrayList<PietCodel> blockCountHelper(PietCodel codel) {
+    ArrayList<PietCodel> accumulator = new ArrayList<>();
+    LinkedList<PietCodel> queue = new LinkedList<>();
+    
+    int col = codel.getCol();
+    int row = codel.getRow();
+    queue.add(codel);
+
+    while (!queue.isEmpty()) {
+            PietCodel ajac = queue.remove();
+            if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() != PietCodel.CHECKED ) {
+                accumulator.add(ajac);
+                ajac.setValue(PietCodel.CHECKED);
+                col = ajac.getCol();
+                row = ajac.getRow();
+            }
+            
+            if ( get(col + 1, row) != null && get(col + 1, row).getValue() != PietCodel.CHECKED && !queue.contains(get(col + 1, row)) ) { queue.addFirst(get(col + 1, row)); }
+            if ( get(col , row + 1) != null && get(col, row + 1).getValue() != PietCodel.CHECKED && !queue.contains(get(col, row + 1)) ) { queue.addFirst(get(col, row + 1)); }
+            if ( get(col - 1, row) != null && get(col - 1, row).getValue() != PietCodel.CHECKED && !queue.contains(get(col - 1, row)) ) { queue.addFirst(get(col - 1, row)); }
+            if ( get(col , row - 1) != null && get(col, row - 1).getValue() != PietCodel.CHECKED && !queue.contains(get(col, row - 1)) ) { queue.addFirst(get(col, row- 1)); }
+            
+            System.out.println("Accumilator: " + accumulator);
+            System.out.println("Queue: " + queue);
+            System.out.println("Adjacent: " + ajac + "\n");
+            
+    }
+    
+    return accumulator;
+}
     
     private PietCodel[] getCodelBlockCorners(PietCodel codel) {
         ArrayList<PietCodel> border = blockCornerHelper(null, codel);
@@ -777,19 +805,19 @@ public class PietProgram {
         }
     }
     
-    public void setCallback(InIntCallback callback) {
+    public void setInIntCallback(InIntCallback callback) {
         inIntCallback = callback;
     }
     
-    public void setCallback(InStrCallback callback) {
+    public void setInStrCallback(InStrCallback callback) {
         inStrCallback = callback;
     }
     
-    public void setCallback(OutIntCallback callback) {
+    public void setOutIntCallback(OutIntCallback callback) {
         outIntCallback = callback;
     }
     
-    public void setCallback(OutStrCallback callback) {
+    public void setOutStrCallback(OutStrCallback callback) {
         outStrCallback = callback;
     }
     
@@ -811,6 +839,58 @@ public class PietProgram {
     
     public interface InfoOutput {
         void onOutput(String output);
+    }
+    
+    // ############ ----- Utility ----- #############
+    
+    static public String turnDirecPointer(String currDC, int turns) {
+        int currValue = 0;
+        
+        // Match up the direction String, with a number value.
+        for (int i = 0; i < 4; i++) if (currDC.equals(DP[i])) currValue = i;
+        
+        // Loop around
+        int newValue = turns + currValue;
+        newValue %= 4;
+        
+        return DP[newValue];
+    }
+    
+    static public String toggleCodelChooser(String currCC, int toggle) {
+        int newValue;
+        
+        if (currCC.equals(CC[0]))
+            newValue = toggle % 2;
+        else
+            newValue = (toggle + 1) % 2;
+        
+        return CC[newValue];
+    }
+    
+    static public int getHueChange(PietCodel first, PietCodel second) {
+        return getDifference(PietCodel.getHue(first), PietCodel.getHue(second), PietCodel.HUES);
+    }
+    
+    static public int getLightnessChange(PietCodel first, PietCodel second) {
+        return getDifference(PietCodel.getLightness(first), PietCodel.getLightness(second), PietCodel.LIGHTNESS);
+    }
+    
+    static private int getDifference(String first, String second, String[] pallete) {
+        int firstIndex = 0;
+        int secondIndex = 0;
+        
+        // Use the String arrays to match a number value to the hue position.
+        for (int i = 0; i < pallete.length; i++) {
+            if (first.equals(pallete[i])) firstIndex = i;
+            if (second.equals(pallete[i])) secondIndex = i;
+        }
+        
+        // Ensures that the values loop around.
+        if (secondIndex < firstIndex) {
+            secondIndex += pallete.length;
+        }
+        
+        return secondIndex - firstIndex;
     }
 }
 
