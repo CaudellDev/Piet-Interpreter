@@ -5,6 +5,12 @@
  */
 package com.reddev112.piet;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+
 /**
  *
  * @author Tyler
@@ -128,5 +134,46 @@ public class Utility {
     
     static private String getLightness(PietCodel codel) {
         return (codel.getColor()).substring(1); // Get the second character.
+    }
+    
+    static public Graphics drawPietProgram(PietProgram program, Graphics g, int codelWidth, boolean showValue, boolean outlineCurrent) {
+        int width = program.getColCount() * codelWidth;
+        int height = program.getRowCount() * codelWidth;
+        
+        g.setColor(Color.GRAY);
+        g.fillRect(0, 0, width, height);
+        
+        for (int y = 0; y < program.getRowCount(); y++) {
+            for (int x = 0; x < program.getColCount(); x++) {
+                PietCodel codel = program.get(x, y);
+//                if (codel.getColor().equals(Utility.WHITE)) continue;
+                
+                int color = Utility.getColor(codel);
+//                System.out.println("Color, white: " + Integer.toHexString((new Color(color)).getRGB()) + ", " + Integer.toHexString(Color.WHITE.getRGB()));
+                
+                g.setColor(new Color(color));
+                g.fillRect(x * codelWidth, y * codelWidth, codelWidth, codelWidth);
+                
+                if (showValue) {
+                    g.setColor(Color.GRAY);
+                    g.setFont(new Font(null, Font.PLAIN, 16));
+                    if (codel != null) g.drawString(codel.getValue() + "", x * codelWidth + (codelWidth / 2), y * codelWidth + (codelWidth / 2));
+                }
+            }
+        }
+        
+        PietCodel current = program.getCurrentCodel();
+        
+        if (current != null && outlineCurrent) {
+            int currX = current.getCol() * codelWidth;
+            int currY = current.getRow() * codelWidth;
+
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setStroke(new BasicStroke(5));
+            g2.setColor(Color.GRAY);
+            g2.drawRect(currX, currY, codelWidth, codelWidth);
+        }
+        
+        return g;
     }
 }

@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2016 Tyler.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package com.reddev112.piet;
 
 import java.awt.BasicStroke;
@@ -66,40 +89,6 @@ public class PietPanel extends JPanel {
         super.paintComponent(g);
         if (program == null) return;
         
-        int width = program.getColCount() * codelWidth;
-        int height = program.getRowCount() * codelWidth;
-        
-        g.setColor(Color.GRAY);
-        g.fillRect(0, 0, width, height);
-        
-        for (int y = 0; y < program.getRowCount(); y++) {
-            for (int x = 0; x < program.getColCount(); x++) {
-                PietCodel codel = program.get(x, y);
-                if (codel.getColor().equals(Utility.WHITE)) continue;
-                
-                int color = Utility.getColor(codel);
-                
-                g.setColor(new Color(color));
-                g.fillRect(x * codelWidth, y * codelWidth, codelWidth, codelWidth);
-                
-                if (showValue) {
-                    g.setColor(Color.GRAY);
-                    g.setFont(new Font(null, Font.PLAIN, 16));
-                    if (codel != null) g.drawString(codel.getValue() + "", x * codelWidth + (codelWidth / 2), y * codelWidth + (codelWidth / 2));
-                }
-            }
-        }
-        
-        PietCodel current = program.getCurrentCodel();
-        
-        if (current != null && outlineCurrent) {
-            int currX = current.getCol() * codelWidth;
-            int currY = current.getRow() * codelWidth;
-
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setStroke(new BasicStroke(5));
-            g2.setColor(Color.GRAY);
-            g2.drawRect(currX, currY, codelWidth, codelWidth);
-        }
+        Utility.drawPietProgram(program, g, codelWidth, showValue, outlineCurrent);
     }
 }

@@ -1,10 +1,29 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * The MIT License
+ *
+ * Copyright 2016 Tyler.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.reddev112.piet;
 
+import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -17,10 +36,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-/**
- *
- * @author Tyler
- */
 public class MainFrame extends javax.swing.JFrame {
 
     /**
@@ -54,6 +69,7 @@ public class MainFrame extends javax.swing.JFrame {
         jMenuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         jFileOpenMenu = new javax.swing.JMenuItem();
+        menuItemSave = new javax.swing.JMenuItem();
         editMenu = new javax.swing.JMenu();
         outlineCurrMenu = new javax.swing.JCheckBoxMenuItem();
         showValueMenu = new javax.swing.JCheckBoxMenuItem();
@@ -133,6 +149,14 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
         fileMenu.add(jFileOpenMenu);
+
+        menuItemSave.setText("Save...");
+        menuItemSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuItemSaveActionPerformed(evt);
+            }
+        });
+        fileMenu.add(menuItemSave);
 
         jMenuBar.add(fileMenu);
 
@@ -288,6 +312,31 @@ public class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_showValueMenuActionPerformed
 
+    private void menuItemSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemSaveActionPerformed
+        if (evt.getSource() == menuItemSave) {
+            if (program != null) {
+                int width = program.getColCount() * pietPanel.getCodelWidth();
+                int height = program.getRowCount() * pietPanel.getCodelWidth();
+                
+                BufferedImage pietImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+                Graphics g = pietImage.createGraphics();
+                Utility.drawPietProgram(program, g, pietPanel.getCodelWidth(), false, false);
+                
+                int returnValue = fileChooser.showSaveDialog(this);
+                
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File outputFile = fileChooser.getSelectedFile();
+                    try {
+                        ImageIO.write(pietImage, "png", outputFile);
+                    } catch (IOException e) {
+                        
+                    }
+                    System.out.println("Image has been saved.");
+                }
+            }
+        }
+    }//GEN-LAST:event_menuItemSaveActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -340,6 +389,7 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JMenuItem menuItemSave;
     private javax.swing.JButton nextBtn;
     private javax.swing.JCheckBoxMenuItem outlineCurrMenu;
     private javax.swing.JEditorPane outputPane;

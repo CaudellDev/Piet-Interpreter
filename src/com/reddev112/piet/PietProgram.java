@@ -29,6 +29,8 @@ public class PietProgram {
     private String direcPointer;
     private String codelChooser;
     private boolean rotDP; // This helps decide whether to rotate the DP or toggle the CC when needed.
+    private boolean catchErrors;
+    private final boolean debugOps = true;
     
     private PietCodel nextCodel;
     private PietCodel currCodel;
@@ -103,6 +105,7 @@ public class PietProgram {
         direcPointer = Utility.DP[0];
         codelChooser = Utility.CC[0];
         rotDP = false;
+        catchErrors = true;
     }
     
     public void run() {
@@ -143,6 +146,8 @@ public class PietProgram {
 //        System.out.println("Hue change and lightness change: " + hueChange + ", " + lightChange);
 //        System.out.println("Curr codel, next codel: " + currCodel + ", " + nextCodel);
         
+        performMove();
+        
         try {
             if (hueChange == 0) {
                 if (lightChange == 0) {
@@ -172,8 +177,10 @@ public class PietProgram {
                 if (lightChange == 0) {
                     greater();
                 } else if (lightChange == 1) {
+//                    System.out.println("On DP - next codel: " + nextCodel);
                     pointer();
                 } else if (lightChange == 2) {
+//                    System.out.println("On CC - next codel: " + nextCodel);
                     pSwitch();
                 } 
             } else if (hueChange == 4) {
@@ -197,12 +204,14 @@ public class PietProgram {
             }
         } catch (EmptyStackException e) {
 //            System.out.println("Stack is empty.");
+            if (!catchErrors) {
+                throw e;
+            }
         }
         
 //        stack.add(0);
-//        System.out.println("Stack: " + stack);
+        System.out.println("Stack: " + stack);
         
-        performMove();
     }
     
     public boolean isComplete() {
@@ -242,6 +251,9 @@ public class PietProgram {
                     count = 1;
                 }
             }
+            
+            // If the smallest width is one pixel, you
+            // can't go any smaller so just finish parsing.
             if (smallestWidth == 1) {
                 break;
             }
@@ -298,7 +310,6 @@ public class PietProgram {
         }
         
         ArrayList<PietCodel> list = blockCountHelper(codel);
-        list.add(codel);
         
         // Use the array of codels in the block, and
         // use the size to for each value in the array.
@@ -356,36 +367,47 @@ public class PietProgram {
         return result;
     }
     
+    /**
+     * 
+     * @param codel
+     * @return Returns an ArrayList containing all the Codels in the Codel Block.
+     */
     private ArrayList<PietCodel> blockCountHelper(PietCodel codel) {
-    ArrayList<PietCodel> accumulator = new ArrayList<>();
-    LinkedList<PietCodel> queue = new LinkedList<>();
-    
-    int col = codel.getCol();
-    int row = codel.getRow();
-    queue.add(codel);
+        ArrayList<PietCodel> accumulator = new ArrayList<>();
+        LinkedList<PietCodel> queue = new LinkedList<>(); // We need to be able to traverse back to previous codels.
 
-    while (!queue.isEmpty()) {
+        int col;
+        int row;
+        queue.add(codel);
+
+        // Keep going until no codels are being added and have been checked.
+        while (!queue.isEmpty()) {
+            
             PietCodel ajac = queue.remove();
             if (ajac != null && codel.equals(ajac.getColor()) && ajac.getValue() != PietCodel.CHECKED ) {
                 accumulator.add(ajac);
                 ajac.setValue(PietCodel.CHECKED);
                 col = ajac.getCol();
                 row = ajac.getRow();
+            } else {
+                continue;
             }
-            
+
             if ( get(col + 1, row) != null && get(col + 1, row).getValue() != PietCodel.CHECKED && !queue.contains(get(col + 1, row)) ) { queue.addFirst(get(col + 1, row)); }
             if ( get(col , row + 1) != null && get(col, row + 1).getValue() != PietCodel.CHECKED && !queue.contains(get(col, row + 1)) ) { queue.addFirst(get(col, row + 1)); }
             if ( get(col - 1, row) != null && get(col - 1, row).getValue() != PietCodel.CHECKED && !queue.contains(get(col - 1, row)) ) { queue.addFirst(get(col - 1, row)); }
             if ( get(col , row - 1) != null && get(col, row - 1).getValue() != PietCodel.CHECKED && !queue.contains(get(col, row - 1)) ) { queue.addFirst(get(col, row- 1)); }
-            
-            System.out.println("Accumilator: " + accumulator);
-            System.out.println("Queue: " + queue);
-            System.out.println("Adjacent: " + ajac + "\n");
-            
-    }
+
+//            System.out.println("Accumilator: " + accumulator);
+//            System.out.println("Queue: " + queue);
+//            System.out.println("Adjacent: " + ajac + "\n");
+
+        }
+
+//        System.out.println("Final accumilator result: " + accumulator + "\n");
     
-    return accumulator;
-}
+        return accumulator;
+    }
     
     private PietCodel[] getCodelBlockCorners(PietCodel codel) {
         ArrayList<PietCodel> border = blockCornerHelper(null, codel);
@@ -566,6 +588,7 @@ public class PietProgram {
     private void performMove() {
         PietCodel newNextCodel = setNextCodel();
         if (newNextCodel != null) {
+            prevCodel = currCodel;
             currCodel = nextCodel;
             nextCodel = newNextCodel;
         }
@@ -589,153 +612,203 @@ public class PietProgram {
     private PietCodel setNextCodel(PietCodel current, String dp, String cc) {
         PietCodel result = null;
         
-        PietCodel[] corners = getCodelBlockCorners(current);
-        
-        
-//        System.out.println("Start the while loop.");
-        
-        // Keep trying to find the next codel. After 8 tries, there are no more options.
-        rotDP = false;
-        exitCount = 0;
-        while (true) {
+//        System.out.println("Prev, curr, next codel: " + prevCodel + ", " + currCodel + ", " + nextCodel);
+        if (!nextCodel.equals(PietCodel.WHITE)) {
+            PietCodel[] corners = getCodelBlockCorners(current);
 
-//            System.out.println("dp, cc: " + direcPointer + ", " + codelChooser);
+            // Keep trying to find the next codel. After 8 tries, there are no more options.
+            rotDP = false;
+            exitCount = 0;
+            while (true) {
 
-            PietCodel newCurrCodel = new PietCodel();
+    //            System.out.println("dp, cc: " + direcPointer + ", " + codelChooser);
 
-            if (direcPointer.equals(Utility.DP[0])) {
-                if (codelChooser.equals(Utility.CC[0])) {
-                    newCurrCodel = corners[0];
-                } else if (codelChooser.equals(Utility.CC[1])) {
-                    newCurrCodel = corners[1];
-                }
-            } else if (direcPointer.equals(Utility.DP[1])) {
-                if (codelChooser.equals(Utility.CC[0])) {
-                    newCurrCodel = corners[2];
-                } else if (codelChooser.equals(Utility.CC[1])) {
-                    newCurrCodel = corners[3];
-                }
-            } else if (direcPointer.equals(Utility.DP[2])) {
-                if (codelChooser.equals(Utility.CC[0])) {
-                    newCurrCodel = corners[4];
-                } else if (codelChooser.equals(Utility.CC[1])) {
-                    newCurrCodel = corners[5];
-                }
-            } else if (direcPointer.equals(Utility.DP[3])) {
-                if (codelChooser.equals(Utility.CC[0])) {
-                    newCurrCodel = corners[6];
-                } else if (codelChooser.equals(Utility.CC[1])) {
-                    newCurrCodel = corners[7];
-                }
-            }
+                PietCodel newCurrCodel = new PietCodel();
 
-            int col = newCurrCodel.getCol();
-            int row = newCurrCodel.getRow();
-        
-        
-            if (direcPointer.equals(Utility.DP[0])) {
-                result = get(col + 1, row);
-            } else if (direcPointer.equals(Utility.DP[1])) {
-                result = get(col, row + 1);
-            } else if (direcPointer.equals(Utility.DP[2])) {
-                result = get(col - 1, row);
-            } else if (direcPointer.equals(Utility.DP[3])) {
-                result = get(col, row - 1);
-            }
-            
-//            System.out.println("Result codel: " + result);
-            
-            if (result == null || result.equals(Utility.BLACK)) {
-//                System.out.println("Hit a black codel or edge. Adjusting direction....");
-                if (rotDP) {
-//                    System.out.print("Rotating DP: " + direcPointer);
-                    direcPointer = Utility.turnDirecPointer(direcPointer, 1);
-//                    System.out.println(" --> " + direcPointer);
-                    rotDP = false;
+                if (direcPointer.equals(DP[0])) {
+                    if (codelChooser.equals(CC[0])) {
+                        newCurrCodel = corners[0];
+                    } else if (codelChooser.equals(CC[1])) {
+                        newCurrCodel = corners[1];
+                    }
+                } else if (direcPointer.equals(DP[1])) {
+                    if (codelChooser.equals(CC[0])) {
+                        newCurrCodel = corners[2];
+                    } else if (codelChooser.equals(CC[1])) {
+                        newCurrCodel = corners[3];
+                    }
+                } else if (direcPointer.equals(DP[2])) {
+                    if (codelChooser.equals(CC[0])) {
+                        newCurrCodel = corners[4];
+                    } else if (codelChooser.equals(CC[1])) {
+                        newCurrCodel = corners[5];
+                    }
+                } else if (direcPointer.equals(DP[3])) {
+                    if (codelChooser.equals(CC[0])) {
+                        newCurrCodel = corners[6];
+                    } else if (codelChooser.equals(CC[1])) {
+                        newCurrCodel = corners[7];
+                    }
+                }
+
+                int col = newCurrCodel.getCol();
+                int row = newCurrCodel.getRow();
+                
+                if (direcPointer.equals(Utility.DP[0])) {
+                    result = get(col + 1, row);
+                } else if (direcPointer.equals(Utility.DP[1])) {
+                    result = get(col, row + 1);
+                } else if (direcPointer.equals(Utility.DP[2])) {
+                    result = get(col - 1, row);
+                } else if (direcPointer.equals(Utility.DP[3])) {
+                    result = get(col, row - 1);
+                }
+
+    //            System.out.println("Result codel: " + result);
+
+                if (result == null || result.equals(Utility.BLACK)) {
+    //                System.out.println("Hit a black codel or edge. Adjusting direction....");
+                    if (rotDP) {
+    //                    System.out.print("Rotating DP: " + direcPointer);
+                        direcPointer = Utility.turnDirecPointer(direcPointer, 1);
+    //                    System.out.println(" --> " + direcPointer);
+                        rotDP = false;
+                    } else {
+    //                    System.out.print("Toggling CC: " + codelChooser);
+                        codelChooser = Utility.toggleCodelChooser(codelChooser, 1);
+//                        System.out.println(" --> " + codelChooser);
+                        rotDP = true;
+                    }
+
+                    exitCount++;
                 } else {
-//                    System.out.print("Toggling CC: " + codelChooser);
-                    codelChooser = Utility.toggleCodelChooser(codelChooser, 1);
-//                    System.out.println(" --> " + codelChooser);
-                    rotDP = true;
+    //                System.out.println("Did not hit a black codel. Continue program execution....");
+                    break;
+                }
+
+                if (exitCount == 8) {
+    //                System.out.println("No valid next codel. Must terminate program.");
+                    complete = true;
+                    return null;
+                }
+            }
+        } else {
+            int col = nextCodel.getCol();
+            int row = nextCodel.getRow();
+            PietCodel newNextCodel = null;
+            
+            while (true) {
+                if (direcPointer.equals(DP[0])) {
+                    newNextCodel = get(col + 1, row);
+                } else if (direcPointer.equals(DP[1])) {
+                    newNextCodel = get(col, row + 1);
+                } else if (direcPointer.equals(DP[2])) {
+                    newNextCodel = get(col - 1, row);
+                } else if (direcPointer.equals(DP[3])) {
+                    newNextCodel = get(col, row - 1);
                 }
                 
-                exitCount++;
-            } else {
-//                System.out.println("Did not hit a black codel. Continue program execution....");
-                break;
+//                System.out.println("New next codel: " + newNextCodel);
+                
+                // Has it hit an obstical?
+                if (newNextCodel == null || newNextCodel.equals(PietCodel.BLACK)) {
+                    codelChooser = toggleCodelChooser(codelChooser, 1);
+                    direcPointer = turnDirecPointer(direcPointer, 1);
+                    continue;
+                }
+                
+                // If the next codel is white, keep going.
+                if (newNextCodel.equals(PietCodel.WHITE)) {
+                    col = newNextCodel.getCol();
+                    row = newNextCodel.getRow();
+                    continue;
+                }
+                
+                // If the next codel is colored, exit out of the loop.
+                if (!newNextCodel.equals(PietCodel.WHITE)) {
+//                    System.out.println("New next codel: " + newNextCodel);
+                    break;
+                }
             }
-        
-            if (exitCount == 8) {
-//                System.out.println("No valid next codel. Must terminate program.");
-                complete = true;
-                return null;
-            }
+            result = newNextCodel;
         }
         
         return result;
     }
     
     private void push() {
-        int value = getBlockCount(currCodel);
+        int value = getBlockCount(prevCodel);
         //System.out.println("getBlockCount value: " + value);
+        System.out.println("Push( " + value + " )");
         stack.push(value);
     }
     
     private void pop() {
+        System.out.println("Pop( " + stack.peek() + " )");
         if (!stack.isEmpty()) stack.pop();
     }
     
     private void add() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Add( " + second + " + " + first + " = " + (second + first) + " )");
         stack.push(second + first); // Order doesn't matter, but for consistancy...
     }
     
     private void sub() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Sub( " + second + " - " + first + " = " + (second - first) + " )");
         stack.push(second - first);
     }
     
     private void multi() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Mult( " + second + " * " + first + " = " + (second * first) + " )");
         stack.push(first * second);
     }
     
     private void divide() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Divide( " + second + " / " + first + " = " + (second / first) + " )");
         stack.push(second / first);
     }
     
     private void mod() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Mod( " + second + " % " + first + " = " + (second % first) + " )");
         stack.push(second % first);
     }
     
     private void not() {
         int first = stack.pop();
+        System.out.println("Not( " + first + " = " + ((first == 0) ? 1 : 0) + " )");
         stack.push((first == 0) ? 1 : 0);
     }
     
     private void greater() {
         int first = stack.pop();
         int second = stack.pop();
+        System.out.println("Greater( " + second + " > " + first + " = " + ((second > first) ? 1 : 0) + " )");
         stack.push((second > first) ? 1 : 0);
     }
     
     private void pointer() {
+        System.out.println("Pointer( " + stack.peek() + " )");
         direcPointer = Utility.turnDirecPointer(direcPointer, stack.pop());
     }
     
     private void pSwitch() {
+        System.out.println("Switch( " + stack.peek() + " )");
         codelChooser = Utility.toggleCodelChooser(codelChooser, stack.pop());
     }
     
     private void duplicate() {
         int value = stack.pop();
+        System.out.println("Dup( " + value + " )");
         stack.push(value);
         stack.push(value);
     }
@@ -743,26 +816,51 @@ public class PietProgram {
     private void roll() {
         int roll = stack.pop();
         int depth = stack.pop();
+        System.out.println("Roll( " + roll + ", " + depth + " )");
+//        System.out.println("Stack: " + stack);
         
-        List<Integer> subArray = stack.subList(stack.size() - depth, stack.size() - 1);
+        if (roll == 0) return; // No need to do anything.
         
-        for (int i = 0; i < roll; i++) {
-            int element = subArray.remove(subArray.size() - 1);
-            subArray.add(0, element);
-        }
+        // Get the section we need from the stack. We don't want to change anything else but these values.
+        List<Integer> subArray = stack.subList(stack.size() - depth, stack.size());
         
-        int index = 0;
-        for (int i = stack.size() - depth; i < stack.size() - 1; i++) {
-            stack.set(i, subArray.get(index));
-            index++;
+        if (roll > 0) {
+            // Move each element at the end to the front, step times.
+            for (int i = 0; i < roll; i++) {
+                int element = subArray.remove(subArray.size() - 1);
+                subArray.add(0, element);
+            }
+
+            // Put the rolled subArray back into the stack.
+            int index = 0;
+            for (int i = stack.size() - depth; i < stack.size(); i++) {
+                stack.set(i, subArray.get(index));
+                index++;
+            }
+        } else {
+            // If it's negative, roll the other direction.
+            for (int i = 0; i < roll; i++) {
+                int element = subArray.remove(0);
+                subArray.add(subArray.size(), element);
+            }
+            
+            // Put the rolled subArray back into the stack.
+            int index = 0;
+            for (int i = stack.size() - depth; i < stack.size(); i++) {
+                stack.set(i, subArray.get(index));
+                index++;
+            }
         }
     }
     
     private void inInt() {
-        if (inIntCallback == null) {
+        if (true) {
+            System.out.print("? ");
             Scanner reader = new Scanner(System.in);
             int input = reader.nextInt();
+            System.out.println("InInt( " + input + " )");
             stack.push(input);
+            reader.reset();
             reader.close();
         } else {
             int value = inIntCallback.onInInt();
@@ -775,11 +873,11 @@ public class PietProgram {
             try {
                 BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
                 int input = br.read();
+                System.out.println("InStr( " + input + " )");
                 stack.add(input);
                 br.close();
             } catch (IOException ex) {
                 Logger.getLogger(PietProgram.class.getName()).log(Level.SEVERE, null, ex);
-            } finally {
             }
         } else {
             
@@ -788,6 +886,7 @@ public class PietProgram {
     
     private void outInt() {
         if (outIntCallback == null) {
+            System.out.println("OutInt( " + stack.peek() + " )");
             System.out.print(stack.pop());
         } else {
             outIntCallback.onOutInt(stack.pop());
@@ -797,6 +896,7 @@ public class PietProgram {
     private void outStr() {
         int character = stack.pop();
         String output = Character.toString((char) character);
+        System.out.println("OutStr( " + output + " )");
         
         if (outStrCallback == null) {
             System.out.print(output);
